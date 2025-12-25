@@ -1,0 +1,1033 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ECリサーチエージェント設計書</title>
+    <style>
+        :root {
+            --primary: #f5a623;
+            --secondary: #2c3e50;
+            --bg: #f8f9fa;
+            --card-bg: #ffffff;
+            --text: #333333;
+            --text-light: #666666;
+            --border: #e0e0e0;
+            --success: #4caf50;
+            --warning: #ff9800;
+            --info: #2196f3;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Hiragino Sans', 'Noto Sans JP', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.8;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            background: linear-gradient(135deg, var(--secondary) 0%, #34495e 100%);
+            color: white;
+            padding: 60px 20px;
+            text-align: center;
+        }
+
+        header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .badge {
+            display: inline-block;
+            background: var(--primary);
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            margin-top: 15px;
+        }
+
+        nav {
+            background: var(--card-bg);
+            padding: 20px;
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        nav ul {
+            list-style: none;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: center;
+        }
+
+        nav a {
+            color: var(--secondary);
+            text-decoration: none;
+            padding: 8px 16px;
+            border-radius: 5px;
+            transition: all 0.3s;
+        }
+
+        nav a:hover {
+            background: var(--primary);
+            color: white;
+        }
+
+        section {
+            background: var(--card-bg);
+            margin: 30px 0;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+
+        h2 {
+            color: var(--secondary);
+            font-size: 1.8em;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 3px solid var(--primary);
+        }
+
+        h3 {
+            color: var(--secondary);
+            font-size: 1.3em;
+            margin: 30px 0 15px;
+        }
+
+        h4 {
+            color: var(--text);
+            font-size: 1.1em;
+            margin: 20px 0 10px;
+        }
+
+        p {
+            margin-bottom: 15px;
+            color: var(--text-light);
+        }
+
+        .highlight {
+            background: #fff3cd;
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-weight: bold;
+        }
+
+        .card {
+            background: var(--bg);
+            padding: 25px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border-left: 4px solid var(--primary);
+        }
+
+        .card-success {
+            border-left-color: var(--success);
+            background: #e8f5e9;
+        }
+
+        .card-info {
+            border-left-color: var(--info);
+            background: #e3f2fd;
+        }
+
+        .card-warning {
+            border-left-color: var(--warning);
+            background: #fff8e1;
+        }
+
+        .flow-diagram {
+            background: #1a1a2e;
+            color: #00ff88;
+            padding: 30px;
+            border-radius: 10px;
+            font-family: 'Monaco', 'Consolas', monospace;
+            font-size: 0.9em;
+            overflow-x: auto;
+            white-space: pre;
+            line-height: 1.6;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+
+        th, td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        th {
+            background: var(--secondary);
+            color: white;
+        }
+
+        tr:hover {
+            background: var(--bg);
+        }
+
+        .status {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 15px;
+            font-size: 0.85em;
+            font-weight: bold;
+        }
+
+        .status-done {
+            background: #c8e6c9;
+            color: #2e7d32;
+        }
+
+        .status-progress {
+            background: #fff9c4;
+            color: #f57f17;
+        }
+
+        .status-todo {
+            background: #ffcdd2;
+            color: #c62828;
+        }
+
+        .status-optional {
+            background: #e1bee7;
+            color: #7b1fa2;
+        }
+
+        .tool-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin: 25px 0;
+        }
+
+        .tool-card {
+            background: var(--bg);
+            padding: 25px;
+            border-radius: 10px;
+            text-align: center;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .tool-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        .tool-card .icon {
+            font-size: 3em;
+            margin-bottom: 15px;
+        }
+
+        .tool-card h4 {
+            margin: 10px 0;
+            color: var(--secondary);
+        }
+
+        .tool-card p {
+            font-size: 0.9em;
+        }
+
+        .tool-card a {
+            display: inline-block;
+            margin-top: 15px;
+            color: var(--info);
+            text-decoration: none;
+        }
+
+        .tool-card a:hover {
+            text-decoration: underline;
+        }
+
+        .timeline {
+            position: relative;
+            padding-left: 30px;
+        }
+
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 10px;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            background: var(--primary);
+        }
+
+        .timeline-item {
+            position: relative;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: var(--bg);
+            border-radius: 8px;
+        }
+
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -25px;
+            top: 25px;
+            width: 15px;
+            height: 15px;
+            background: var(--primary);
+            border-radius: 50%;
+            border: 3px solid white;
+        }
+
+        .timeline-item h4 {
+            color: var(--primary);
+            margin-bottom: 10px;
+        }
+
+        ul, ol {
+            margin: 15px 0 15px 25px;
+        }
+
+        li {
+            margin-bottom: 10px;
+            color: var(--text-light);
+        }
+
+        code {
+            background: #263238;
+            color: #80cbc4;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-family: 'Monaco', 'Consolas', monospace;
+            font-size: 0.9em;
+        }
+
+        pre {
+            background: #263238;
+            color: #eceff1;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 20px 0;
+        }
+
+        pre code {
+            background: none;
+            padding: 0;
+        }
+
+        .comparison {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 25px 0;
+        }
+
+        .comparison > div {
+            padding: 25px;
+            border-radius: 10px;
+        }
+
+        .comparison .before {
+            background: #ffebee;
+            border: 2px solid #ef5350;
+        }
+
+        .comparison .after {
+            background: #e8f5e9;
+            border: 2px solid #66bb6a;
+        }
+
+        .comparison h4 {
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        .emoji-list {
+            list-style: none;
+            margin-left: 0;
+        }
+
+        .emoji-list li {
+            padding: 8px 0;
+        }
+
+        footer {
+            background: var(--secondary);
+            color: white;
+            padding: 40px 20px;
+            text-align: center;
+            margin-top: 50px;
+        }
+
+        footer a {
+            color: var(--primary);
+        }
+
+        @media (max-width: 768px) {
+            header h1 {
+                font-size: 1.8em;
+            }
+
+            section {
+                padding: 25px;
+            }
+
+            .comparison {
+                grid-template-columns: 1fr;
+            }
+
+            nav ul {
+                flex-direction: column;
+                align-items: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>ECリサーチエージェント設計書</h1>
+            <p>ぶんせき君 × AI × MCP で実現する<br>eBay販売の自動化・効率化プロジェクト</p>
+            <span class="badge">Version 1.0 - 2025年12月</span>
+        </div>
+    </header>
+
+    <nav>
+        <ul>
+            <li><a href="#overview">概要</a></li>
+            <li><a href="#current">現状分析</a></li>
+            <li><a href="#goal">目標</a></li>
+            <li><a href="#architecture">システム構成</a></li>
+            <li><a href="#mcp">MCP一覧</a></li>
+            <li><a href="#workflow">ワークフロー</a></li>
+            <li><a href="#roadmap">ロードマップ</a></li>
+            <li><a href="#glossary">用語集</a></li>
+        </ul>
+    </nav>
+
+    <main class="container">
+        <!-- 概要セクション -->
+        <section id="overview">
+            <h2>📋 プロジェクト概要</h2>
+
+            <div class="card">
+                <h4>このプロジェクトは何？</h4>
+                <p>eBayで商品を販売するときに必要な「分析」と「リサーチ」を、<span class="highlight">AIの力を借りて効率化</span>するプロジェクトです。</p>
+                <p>今まで目で見て、手作業でやっていたことを、AIと自動化ツールで楽にすることが目標です。</p>
+            </div>
+
+            <h3>解決したい問題</h3>
+            <div class="comparison">
+                <div class="before">
+                    <h4>😫 今の状態（Before）</h4>
+                    <ul class="emoji-list">
+                        <li>❌ 検索結果を全ページ目視で確認</li>
+                        <li>❌ 新しいキーワードの発掘が大変</li>
+                        <li>❌ 分析とリサーチがつながっていない</li>
+                        <li>❌ 毎日の出品記録が面倒</li>
+                        <li>❌ データがバラバラで判断しにくい</li>
+                    </ul>
+                </div>
+                <div class="after">
+                    <h4>😊 目指す状態（After）</h4>
+                    <ul class="emoji-list">
+                        <li>✅ AIが検索結果を自動で分析</li>
+                        <li>✅ 売れ筋から新キーワードを提案</li>
+                        <li>✅ 分析→リサーチ→出品が一連の流れに</li>
+                        <li>✅ 出品データは自動で記録</li>
+                        <li>✅ データが一箇所に集まり判断しやすい</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- 現状分析セクション -->
+        <section id="current">
+            <h2>🔍 現状分析</h2>
+
+            <h3>今持っているツール</h3>
+            <table>
+                <tr>
+                    <th>ツール名</th>
+                    <th>できること</th>
+                    <th>状態</th>
+                </tr>
+                <tr>
+                    <td><strong>ぶんせき君</strong><br><small>Chrome拡張機能 v4.5.3</small></td>
+                    <td>
+                        ・自分のeBay出品データを分析<br>
+                        ・Terapeakから市場データ取得<br>
+                        ・競合セラーのデータ取得<br>
+                        ・AI提案（OpenAI/Claude/Gemini）
+                    </td>
+                    <td><span class="status status-done">稼働中</span></td>
+                </tr>
+                <tr>
+                    <td><strong>Obsidian</strong><br><small>ナレッジ管理</small></td>
+                    <td>
+                        ・開発ログの記録<br>
+                        ・アイデアのメモ<br>
+                        ・MCP連携済み
+                    </td>
+                    <td><span class="status status-done">稼働中</span></td>
+                </tr>
+                <tr>
+                    <td><strong>Google Apps Script</strong></td>
+                    <td>
+                        ・スプレッドシート操作<br>
+                        ・自動化スクリプト作成
+                    </td>
+                    <td><span class="status status-done">スキルあり</span></td>
+                </tr>
+            </table>
+
+            <h3>現在のワークフロー</h3>
+            <div class="flow-diagram">
+┌─────────────────────────────────────────────────────────────────┐
+│                    現在のワークフロー                              │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│   eBay セラーハブ                                                 │
+│        │                                                         │
+│        ▼                                                         │
+│   ┌─────────────┐                                                │
+│   │ ぶんせき君   │ ← 自分のデータ取得                              │
+│   └──────┬──────┘                                                │
+│          │                                                       │
+│          ▼                                                       │
+│   ┌─────────────┐                                                │
+│   │  Terapeak   │ ← 市場データ・競合データ取得                     │
+│   └──────┬──────┘                                                │
+│          │                                                       │
+│          ▼                                                       │
+│   ┌─────────────┐                                                │
+│   │    分析     │ ← ここまではできている ✓                        │
+│   └──────┬──────┘                                                │
+│          │                                                       │
+│          ▼                                                       │
+│   ┌─────────────┐                                                │
+│   │  リサーチ   │ ← ここが目視で大変 ✗                            │
+│   │ （全ページ）│                                                 │
+│   └──────┬──────┘                                                │
+│          │                                                       │
+│          ▼                                                       │
+│   ┌─────────────┐                                                │
+│   │  出品判断   │ ← 判断基準が曖昧 ✗                              │
+│   └─────────────┘                                                │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+            </div>
+
+            <div class="card card-warning">
+                <h4>⚠️ ボトルネック（一番の問題点）</h4>
+                <p><strong>「分析」から「リサーチ」への橋渡しがない</strong></p>
+                <p>せっかくぶんせき君で良いデータが取れても、そこからのリサーチ作業が手作業のため、時間がかかりすぎている。検索結果を1ページずつ見ていくのは人間の限界を超えている。</p>
+            </div>
+        </section>
+
+        <!-- 目標セクション -->
+        <section id="goal">
+            <h2>🎯 目標</h2>
+
+            <h3>短期目標（1-2週間）</h3>
+            <ul>
+                <li>MCP（AIの拡張機能）のセットアップを完了する</li>
+                <li>毎日の出品データを自動で記録する仕組みを作る</li>
+                <li>データの保存先を決めて統一する</li>
+            </ul>
+
+            <h3>中期目標（1-2ヶ月）</h3>
+            <ul>
+                <li>分析結果から自動でリサーチキーワードを提案する</li>
+                <li>競合セラーの動向を自動で追跡する</li>
+                <li>週次レポートを自動生成する</li>
+            </ul>
+
+            <h3>長期目標（3ヶ月以降）</h3>
+            <ul>
+                <li>AIエージェントとして、相談しながら出品戦略を決められる</li>
+                <li>カテゴリの強化・撤退判断をデータに基づいて行う</li>
+                <li>新規カテゴリ開拓を半自動化する</li>
+            </ul>
+
+            <div class="card card-success">
+                <h4>✨ 最終的に目指す姿</h4>
+                <p>毎朝、AIが「今日やるべきこと」を提案してくれる。例えば：</p>
+                <ul>
+                    <li>「昨日出品した○○カテゴリ、競合より20%安いので価格調整を検討してください」</li>
+                    <li>「△△ブランドが今週急上昇中です。関連商品のリサーチをおすすめします」</li>
+                    <li>「□□カテゴリは3週間売上ゼロです。撤退を検討しますか？」</li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- システム構成セクション -->
+        <section id="architecture">
+            <h2>🏗️ システム構成</h2>
+
+            <h3>全体像</h3>
+            <div class="flow-diagram">
+┌─────────────────────────────────────────────────────────────────────┐
+│                     ECリサーチエージェント 全体構成                    │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                      │
+│  【データ収集層】                                                      │
+│  ┌────────────────┐  ┌────────────────┐  ┌────────────────┐         │
+│  │   ぶんせき君    │  │  eBay API      │  │  Webスクレイピング│         │
+│  │ (Chrome拡張)   │  │  (将来対応)    │  │  (Firecrawl)   │         │
+│  └───────┬────────┘  └───────┬────────┘  └───────┬────────┘         │
+│          │                   │                   │                  │
+│          └───────────────────┼───────────────────┘                  │
+│                              ▼                                       │
+│  【データ蓄積層】                                                      │
+│  ┌──────────────────────────────────────────────────────────────┐   │
+│  │                   Google Sheets                              │   │
+│  │  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐     │   │
+│  │  │ 出品データ │  │ 売上データ │  │ 競合データ │  │市場トレンド│     │   │
+│  │  └──────────┘  └──────────┘  └──────────┘  └──────────┘     │   │
+│  └──────────────────────────────────────────────────────────────┘   │
+│                              │                                       │
+│                              ▼                                       │
+│  【分析・AI層】                                                        │
+│  ┌──────────────────────────────────────────────────────────────┐   │
+│  │                    Claude Code + MCP                         │   │
+│  │  ┌─────────┐  ┌─────────┐  ┌─────────┐  ┌─────────┐         │   │
+│  │  │Obsidian │  │ n8n     │  │ Sheets  │  │ Tavily  │         │   │
+│  │  │ MCP     │  │ MCP     │  │ MCP     │  │ MCP     │         │   │
+│  │  └─────────┘  └─────────┘  └─────────┘  └─────────┘         │   │
+│  └──────────────────────────────────────────────────────────────┘   │
+│                              │                                       │
+│                              ▼                                       │
+│  【アウトプット層】                                                    │
+│  ┌──────────────────────────────────────────────────────────────┐   │
+│  │  ・今日のアクションプラン     ・カテゴリ強化/撤退の提案        │   │
+│  │  ・新規キーワード提案         ・週次/月次レポート              │   │
+│  └──────────────────────────────────────────────────────────────┘   │
+│                                                                      │
+└─────────────────────────────────────────────────────────────────────┘
+            </div>
+
+            <h3>各層の役割</h3>
+
+            <div class="card">
+                <h4>📥 データ収集層</h4>
+                <p>eBayから様々なデータを集めてくる部分です。</p>
+                <ul>
+                    <li><strong>ぶんせき君</strong>：自分の出品データ、Terapeakの市場データ、競合セラーのデータを取得</li>
+                    <li><strong>Webスクレイピング</strong>：将来的に、他のサイトからも情報を自動取得</li>
+                </ul>
+            </div>
+
+            <div class="card">
+                <h4>💾 データ蓄積層</h4>
+                <p>集めたデータを整理して保存する場所です。</p>
+                <ul>
+                    <li><strong>Google Sheets</strong>を中心に、時系列でデータを蓄積</li>
+                    <li>過去のデータと比較できるようにする</li>
+                    <li>グラフや表で可視化しやすい</li>
+                </ul>
+            </div>
+
+            <div class="card">
+                <h4>🤖 分析・AI層</h4>
+                <p>集めたデータをAIが分析して、提案を出す部分です。</p>
+                <ul>
+                    <li><strong>Claude Code</strong>：メインのAIアシスタント</li>
+                    <li><strong>MCP</strong>：AIに様々なツールを使わせるための仕組み</li>
+                </ul>
+            </div>
+
+            <div class="card">
+                <h4>📊 アウトプット層</h4>
+                <p>AIが分析した結果を、実際のアクションにつなげる部分です。</p>
+                <ul>
+                    <li>今日やるべきことのリスト</li>
+                    <li>新しく調べるべきキーワード</li>
+                    <li>カテゴリの強化や撤退の判断材料</li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- MCP一覧セクション -->
+        <section id="mcp">
+            <h2>🔌 MCP（AI拡張機能）一覧</h2>
+
+            <div class="card card-info">
+                <h4>💡 MCPって何？</h4>
+                <p><strong>MCP（Model Context Protocol）</strong>は、AIに様々なツールを使わせるための仕組みです。</p>
+                <p>例えるなら、スマホにアプリを入れるようなもの。MCPを入れることで、AIができることが増えます。</p>
+                <p>USBポートのように、いろんなツールを「接続」できる標準規格です。</p>
+            </div>
+
+            <h3>導入済みMCP</h3>
+            <div class="tool-grid">
+                <div class="tool-card">
+                    <div class="icon">📝</div>
+                    <h4>Obsidian MCP</h4>
+                    <p>ノート・ナレッジ管理ツールと連携。メモの読み書きができる。</p>
+                    <span class="status status-done">導入済み</span>
+                </div>
+                <div class="tool-card">
+                    <div class="icon">⚡</div>
+                    <h4>n8n MCP</h4>
+                    <p>ワークフロー自動化ツール。設計の相談ができる。</p>
+                    <span class="status status-done">導入済み</span>
+                    <br><a href="https://github.com/czlonkowski/n8n-mcp" target="_blank">→ GitHub</a>
+                </div>
+                <div class="tool-card">
+                    <div class="icon">📊</div>
+                    <h4>Google Sheets MCP</h4>
+                    <p>スプレッドシートの読み書き。データ分析の基盤。</p>
+                    <span class="status status-progress">要API設定</span>
+                    <br><a href="https://github.com/xing5/mcp-google-sheets" target="_blank">→ GitHub</a>
+                </div>
+                <div class="tool-card">
+                    <div class="icon">🔥</div>
+                    <h4>Firecrawl MCP</h4>
+                    <p>Webスクレイピング。サイトからデータを自動取得。</p>
+                    <span class="status status-progress">要API設定</span>
+                    <br><a href="https://firecrawl.dev" target="_blank">→ 公式サイト</a>
+                </div>
+                <div class="tool-card">
+                    <div class="icon">🔍</div>
+                    <h4>Tavily MCP</h4>
+                    <p>AI専用Web検索。リサーチの効率化。</p>
+                    <span class="status status-progress">要API設定</span>
+                    <br><a href="https://tavily.com" target="_blank">→ 公式サイト</a>
+                </div>
+            </div>
+
+            <h3>API設定が必要なMCP</h3>
+            <table>
+                <tr>
+                    <th>MCP名</th>
+                    <th>無料枠</th>
+                    <th>APIキー取得先</th>
+                    <th>用途</th>
+                </tr>
+                <tr>
+                    <td>Google Sheets</td>
+                    <td>無料（設定は必要）</td>
+                    <td><a href="https://console.cloud.google.com/" target="_blank">Google Cloud Console</a></td>
+                    <td>データ蓄積・分析</td>
+                </tr>
+                <tr>
+                    <td>Firecrawl</td>
+                    <td>500クレジット/月</td>
+                    <td><a href="https://firecrawl.dev" target="_blank">Firecrawl</a></td>
+                    <td>Webスクレイピング</td>
+                </tr>
+                <tr>
+                    <td>Tavily</td>
+                    <td>1,000回/月</td>
+                    <td><a href="https://tavily.com" target="_blank">Tavily</a></td>
+                    <td>Web検索</td>
+                </tr>
+            </table>
+
+            <h3>検討中のMCP</h3>
+            <table>
+                <tr>
+                    <th>MCP名</th>
+                    <th>できること</th>
+                    <th>検討理由</th>
+                </tr>
+                <tr>
+                    <td>eBay MCP</td>
+                    <td>eBay APIの操作（在庫管理、注文取得など）</td>
+                    <td>API認証が複雑なため保留</td>
+                </tr>
+                <tr>
+                    <td>Bright Data MCP</td>
+                    <td>高度なスクレイピング（CAPTCHA回避など）</td>
+                    <td>有料。必要になったら検討</td>
+                </tr>
+                <tr>
+                    <td>Zapier MCP</td>
+                    <td>8000+アプリ連携</td>
+                    <td>n8nで代替可能か検証中</td>
+                </tr>
+            </table>
+        </section>
+
+        <!-- ワークフローセクション -->
+        <section id="workflow">
+            <h2>📅 ワークフロー設計</h2>
+
+            <h3>日次ワークフロー（毎日やること）</h3>
+            <div class="timeline">
+                <div class="timeline-item">
+                    <h4>🌅 朝：前日の振り返り</h4>
+                    <ul>
+                        <li>前日の出品数・売上を確認</li>
+                        <li>新規注文をチェック</li>
+                        <li>AIから「今日のおすすめアクション」を受け取る</li>
+                    </ul>
+                </div>
+                <div class="timeline-item">
+                    <h4>🌞 日中：作業記録</h4>
+                    <ul>
+                        <li>出品した商品を記録（自動化が目標）</li>
+                        <li>リサーチで見つけたキーワードをメモ</li>
+                    </ul>
+                </div>
+                <div class="timeline-item">
+                    <h4>🌙 夜：その日のまとめ</h4>
+                    <ul>
+                        <li>作業内容を登録</li>
+                        <li>明日やることをメモ</li>
+                    </ul>
+                </div>
+            </div>
+
+            <h3>週次ワークフロー（週1回やること）</h3>
+            <div class="card">
+                <h4>📊 週次レビュー</h4>
+                <ul>
+                    <li>今週の出品数 vs 売上の振り返り</li>
+                    <li>カテゴリ別のパフォーマンス確認</li>
+                    <li>競合セラーの動向チェック</li>
+                    <li>来週の強化カテゴリを決定</li>
+                </ul>
+            </div>
+
+            <h3>月次ワークフロー（月1回やること）</h3>
+            <div class="card">
+                <h4>📈 月次分析・戦略会議</h4>
+                <ul>
+                    <li>月間の売上・利益の分析</li>
+                    <li>カテゴリ別の継続/撤退判断</li>
+                    <li>新規カテゴリ開拓のリサーチ</li>
+                    <li>来月の目標設定</li>
+                </ul>
+            </div>
+
+            <h3>目指す自動化レベル</h3>
+            <table>
+                <tr>
+                    <th>タスク</th>
+                    <th>現状</th>
+                    <th>目標</th>
+                </tr>
+                <tr>
+                    <td>出品データの記録</td>
+                    <td>手動</td>
+                    <td>自動（eBay連携 or 拡張機能）</td>
+                </tr>
+                <tr>
+                    <td>売上データの取得</td>
+                    <td>手動（CSVエクスポート）</td>
+                    <td>半自動（定期取得）</td>
+                </tr>
+                <tr>
+                    <td>競合分析</td>
+                    <td>目視で全ページ</td>
+                    <td>AIが自動分析・サマリー</td>
+                </tr>
+                <tr>
+                    <td>キーワード発掘</td>
+                    <td>手動リサーチ</td>
+                    <td>AIが提案</td>
+                </tr>
+                <tr>
+                    <td>週次レポート</td>
+                    <td>なし</td>
+                    <td>自動生成</td>
+                </tr>
+            </table>
+        </section>
+
+        <!-- ロードマップセクション -->
+        <section id="roadmap">
+            <h2>🗺️ ロードマップ</h2>
+
+            <h3>Phase 1：基盤構築（現在）</h3>
+            <table>
+                <tr>
+                    <th>タスク</th>
+                    <th>状態</th>
+                    <th>備考</th>
+                </tr>
+                <tr>
+                    <td>Obsidian MCP セットアップ</td>
+                    <td><span class="status status-done">完了</span></td>
+                    <td>ナレッジ管理用</td>
+                </tr>
+                <tr>
+                    <td>n8n MCP セットアップ</td>
+                    <td><span class="status status-done">完了</span></td>
+                    <td>ワークフロー設計相談用</td>
+                </tr>
+                <tr>
+                    <td>Google Sheets MCP セットアップ</td>
+                    <td><span class="status status-progress">API設定待ち</span></td>
+                    <td>データ蓄積の基盤</td>
+                </tr>
+                <tr>
+                    <td>Firecrawl MCP セットアップ</td>
+                    <td><span class="status status-progress">API設定待ち</span></td>
+                    <td>Webスクレイピング用</td>
+                </tr>
+                <tr>
+                    <td>Tavily MCP セットアップ</td>
+                    <td><span class="status status-progress">API設定待ち</span></td>
+                    <td>Web検索用</td>
+                </tr>
+                <tr>
+                    <td>データ保存先の決定</td>
+                    <td><span class="status status-todo">未着手</span></td>
+                    <td>Sheets or Obsidian</td>
+                </tr>
+            </table>
+
+            <h3>Phase 2：データ収集自動化</h3>
+            <table>
+                <tr>
+                    <th>タスク</th>
+                    <th>状態</th>
+                    <th>備考</th>
+                </tr>
+                <tr>
+                    <td>ぶんせき君にエクスポート機能追加</td>
+                    <td><span class="status status-todo">未着手</span></td>
+                    <td>Sheets連携ボタン</td>
+                </tr>
+                <tr>
+                    <td>日次出品データの自動記録</td>
+                    <td><span class="status status-todo">未着手</span></td>
+                    <td>GAS or 拡張機能</td>
+                </tr>
+                <tr>
+                    <td>競合データの定期取得</td>
+                    <td><span class="status status-todo">未着手</span></td>
+                    <td>頻度と方法を検討</td>
+                </tr>
+            </table>
+
+            <h3>Phase 3：AI分析・提案機能</h3>
+            <table>
+                <tr>
+                    <th>タスク</th>
+                    <th>状態</th>
+                    <th>備考</th>
+                </tr>
+                <tr>
+                    <td>売れ筋キーワード自動抽出</td>
+                    <td><span class="status status-todo">未着手</span></td>
+                    <td>AIで分析</td>
+                </tr>
+                <tr>
+                    <td>競合分析の自動化</td>
+                    <td><span class="status status-todo">未着手</span></td>
+                    <td>目視作業を削減</td>
+                </tr>
+                <tr>
+                    <td>週次レポート自動生成</td>
+                    <td><span class="status status-todo">未着手</span></td>
+                    <td>Claude Code + Sheets</td>
+                </tr>
+                <tr>
+                    <td>アクションプラン提案</td>
+                    <td><span class="status status-todo">未着手</span></td>
+                    <td>毎朝のおすすめ</td>
+                </tr>
+            </table>
+
+            <h3>Phase 4：高度な自動化（将来）</h3>
+            <table>
+                <tr>
+                    <th>タスク</th>
+                    <th>状態</th>
+                    <th>備考</th>
+                </tr>
+                <tr>
+                    <td>カテゴリ強化/撤退の判断支援</td>
+                    <td><span class="status status-optional">将来</span></td>
+                    <td>データ蓄積後</td>
+                </tr>
+                <tr>
+                    <td>価格最適化の提案</td>
+                    <td><span class="status status-optional">将来</span></td>
+                    <td>競合データ分析</td>
+                </tr>
+                <tr>
+                    <td>新規カテゴリ開拓の半自動化</td>
+                    <td><span class="status status-optional">将来</span></td>
+                    <td>トレンド分析</td>
+                </tr>
+            </table>
+        </section>
+
+        <!-- 用語集セクション -->
+        <section id="glossary">
+            <h2>📚 用語集</h2>
+
+            <div class="card">
+                <h4>MCP（Model Context Protocol）</h4>
+                <p>AIに様々なツールを使わせるための仕組み。Anthropic社が2024年に発表。「AIのUSBポート」のようなもので、いろんなツールを接続できる。</p>
+            </div>
+
+            <div class="card">
+                <h4>Claude Code</h4>
+                <p>Anthropic社が提供するAIアシスタント「Claude」のコマンドライン版。ターミナルで動作し、MCPを通じて様々なツールと連携できる。</p>
+            </div>
+
+            <div class="card">
+                <h4>Terapeak</h4>
+                <p>eBayが提供する市場調査ツール。売れ筋商品、価格帯、競合の情報などを調べられる。eBayセラーハブから利用可能。</p>
+            </div>
+
+            <div class="card">
+                <h4>GAS（Google Apps Script）</h4>
+                <p>Googleが提供するスクリプト言語。スプレッドシートの自動化などに使える。JavaScriptベースで比較的学びやすい。</p>
+            </div>
+
+            <div class="card">
+                <h4>n8n</h4>
+                <p>ワークフロー自動化ツール。「もしAが起きたらBをする」という自動化を、プログラミングなしで作れる。無料のセルフホスト版と有料のクラウド版がある。</p>
+            </div>
+
+            <div class="card">
+                <h4>Webスクレイピング</h4>
+                <p>Webサイトから自動的にデータを取得する技術。例えば、競合の出品情報を自動で集めることができる。</p>
+            </div>
+
+            <div class="card">
+                <h4>API（Application Programming Interface）</h4>
+                <p>ソフトウェア同士が情報をやり取りするための窓口。例えばeBay APIを使うと、プログラムからeBayのデータを取得できる。</p>
+            </div>
+
+            <div class="card">
+                <h4>APIキー</h4>
+                <p>APIを使うための「鍵」。サービスに登録すると発行される。この鍵がないとAPIは使えない。</p>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>ECリサーチエージェント設計書 v1.0</p>
+        <p>最終更新: 2025年12月25日</p>
+        <p><a href="https://github.com/anthropics/claude-code" target="_blank">Claude Code</a> を使用して作成</p>
+    </footer>
+</body>
+</html>
